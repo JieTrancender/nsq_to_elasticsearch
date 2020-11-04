@@ -52,8 +52,8 @@ func flagSet() *flag.FlagSet {
 	fs.String("work-dir", "", "directory for in-progress files before moving to output-dir")
 	fs.Duration("topic-refresh", time.Minute, "how frequently the topic list should be refreshed")
 	// fs.String("topic-pattern", "", "only log topics matching the following pattern")
-	fs.String("index-name", "logstash-%Y.%m.%d", "elasticsearch index name (strftime format)")
-	fs.String("index-type", "logstash", "elasticsearch index mapping")
+	fs.String("index-name", "nsq-%Y.%m.%d", "elasticsearch index name (strftime format)")
+	fs.String("index-type", "nsq", "elasticsearch index mapping")
 
 	fs.Duration("sync-interval", 30*time.Second, "sync file to elasticsearch duration")
 	fs.Int("publisher-num", 10, "number of concurrent publishers")
