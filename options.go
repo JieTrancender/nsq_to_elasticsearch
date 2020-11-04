@@ -5,7 +5,7 @@ import "time"
 // Options options for config
 type Options struct {
 	Topics               []string      `flag:"topic"`
-	TopicPattern         string        `flag:"topic-pattern"`
+	TopicPatterns        []string      `flag:"topic-pattern"`
 	TopicRefreshInterval time.Duration `flag:"topic-refresh"`
 	Channel              string        `flag:"channel"`
 

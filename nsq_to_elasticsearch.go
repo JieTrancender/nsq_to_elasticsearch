@@ -51,9 +51,9 @@ func flagSet() *flag.FlagSet {
 	fs.String("output-dir", "/tmp", "directory to write output files to")
 	fs.String("work-dir", "", "directory for in-progress files before moving to output-dir")
 	fs.Duration("topic-refresh", time.Minute, "how frequently the topic list should be refreshed")
-	fs.String("topic-pattern", "", "only log topics matching the following pattern")
-	fs.String("index-name", "nsq-%Y.%m.%d", "elasticsearch index name (strftime format)")
-	fs.String("index-type", "nsq", "elasticsearch index mapping")
+	// fs.String("topic-pattern", "", "only log topics matching the following pattern")
+	fs.String("index-name", "logstash-%Y.%m.%d", "elasticsearch index name (strftime format)")
+	fs.String("index-type", "logstash", "elasticsearch index mapping")
 
 	fs.Duration("sync-interval", 30*time.Second, "sync file to elasticsearch duration")
 	fs.Int("publisher-num", 10, "number of concurrent publishers")
@@ -65,11 +65,13 @@ func flagSet() *flag.FlagSet {
 	nsqdTCPAddrs := ArrayFlags{}
 	lookupdHTTPAddrs := ArrayFlags{}
 	topics := ArrayFlags{}
+	topicPatterns := ArrayFlags{}
 	consumerOpts := ArrayFlags{}
 	fs.Var(&elasticHTTPAddrs, "elasticsearch-http-address", "elasticsearch http address (may be given multiple times)")
 	fs.Var(&nsqdTCPAddrs, "nsqd-tcp-address", "nsqd TCP address (may be given multiple times)")
 	fs.Var(&lookupdHTTPAddrs, "lookupd-http-address", "lookupd HTTP address (may be given multiple times)")
 	fs.Var(&topics, "topic", "nsq topic (may be given multiple times)")
+	fs.Var(&topicPatterns, "topic-pattern", "nsq topic pattern (may be given multiple times)")
 	fs.Var(&consumerOpts, "consumer-opt", "option to passthrough to nsq.Config (may be given multiple times, http://godoc.org/github.com/nsqio/go-nsq#Config)")
 
 	return fs
@@ -112,7 +114,7 @@ func main() {
 		log.Fatal("use --nsqd-tcp-address or --lookupd-http-address not both")
 	}
 
-	if len(opts.Topics) == 0 && len(opts.TopicPattern) == 0 {
+	if len(opts.Topics) == 0 && len(opts.TopicPatterns) == 0 {
 		log.Fatal("--topic or --topic-pattern required")
 	}
 
@@ -137,57 +139,16 @@ func main() {
 	signal.Notify(hupChan, syscall.SIGHUP)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
 
-	discoverer := newTopicDiscoverer(opts, cfg, hupChan, termChan)
+	// if fs.Lookup("version").Value.(flag.Getter).Get().(bool) {
+	fmt.Println("elasticHTTPAddrs:", fs.Lookup("elasticsearch-http-address").Value.(flag.Getter).Get().([]string))
+
+	elasticAddrs := fs.Lookup("elasticsearch-http-address").Value.(flag.Getter).Get().([]string)
+	indexName := fs.Lookup("index-name").Value.(flag.Getter).Get().(string)
+	indexType := fs.Lookup("index-type").Value.(flag.Getter).Get().(string)
+	fmt.Println("elasticAddrs", elasticAddrs)
+	fmt.Println("indexName", indexName)
+	fmt.Println("indexType", indexType)
+
+	discoverer, _ := newTopicDiscoverer(opts, cfg, hupChan, termChan, elasticAddrs, indexName, indexType)
 	discoverer.run()
-
-	// if *showVersion {
-	// 	fmt.Printf("nsqToElasticsearch v, go-nsq v%s\n", VERSION, nsq.VERSION)
-	// }
-
-	// // if *topic == "" || *channel == "" {
-	// // 	log.Fatal("--topic or --channel required")
-	// // }
-	// if len(topics) == 0 {
-	// 	log.Fatal("--topic required")
-	// }
-
-	// if len(lookupdHTTPAddrs) == 0 && len(nsqdTCPAddrs) == 0 {
-	// 	log.Fatal("--lookupd-http-address or --nsqd-tcp-address required")
-	// }
-
-	// if len(lookupdHTTPAddrs) != 0 && len(nsqdTCPAddrs) != 0 {
-	// 	log.Fatal("use --nsqd-tcp-address or --lookupd-http-address not both")
-	// }
-
-	// if len(elasticAddrs) == 0 {
-	// 	log.Fatal("missing --elasticsearch-http")
-	// }
-
-	// hupChan := make(chan os.Signal)
-	// termChan := make(chan os.Signal)
-	// signal.Notify(hupChan, syscall.SIGHUP)
-	// siganl.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
-
-	// discoverer := newTopicDiscoverer()
-	// discoverer.run()
-
-	// cfg := nsq.NewConfig()
-	// flagSet := flag.NewFlagSet("", flag.ExitOnError)
-
-	// flagSet.Var(&nsq.ConfigFlag{cfg}, "consumer-opt", "option to pass through to nsq.Consumer (may be given multiple times)")
-	// flagSet.PrintDefaults()
-
-	// println("HeartbeatInterval", cfg.HeartbeatInterval)
-	// println("MaxAttempts", cfg.MaxAttempts)
-
-	// // err := flagSet.Parse([]string{
-	// // 	"--consumer-opt=heartbeat_interval,1s",
-	// // 	"--consumer-opt=max_attempts,10",
-	// // })
-	// // if err != nil {
-	// // 	panic(err.Error())
-	// // }
-
-	// println("HeartbeatInterval", cfg.HeartbeatInterval)
-	// println("MaxAttempts", cfg.MaxAttempts)
 }
