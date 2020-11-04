@@ -65,8 +65,6 @@ func (nsqConsumer *NSQConsumer) HandleMessage(m *nsq.Message) error {
 }
 
 func (nsqConsumer *NSQConsumer) router() {
-	// output := make([]*nsq.Message, nsqConsumer.opts.MaxInFlight)
-
 	closeElastic, exit := false, false
 	for {
 		select {
@@ -79,6 +77,8 @@ func (nsqConsumer *NSQConsumer) router() {
 		case m := <-nsqConsumer.msgChan:
 			err := nsqConsumer.publisher.handleMessage(m)
 			if err != nil {
+				// 重试
+				m.Requeue(-1)
 				log.Println("NSQConsumer router msg deal fail", err)
 				os.Exit(1)
 			}
