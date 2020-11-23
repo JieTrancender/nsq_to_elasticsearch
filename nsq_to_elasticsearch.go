@@ -54,6 +54,8 @@ func flagSet() *flag.FlagSet {
 	// fs.String("topic-pattern", "", "only log topics matching the following pattern")
 	fs.String("index-name", "nsq-%Y.%m.%d", "elasticsearch index name (strftime format)")
 	fs.String("index-type", "nsq", "elasticsearch index mapping")
+	fs.String("elastic-username", "", "username for elasticsearch base auth")
+	fs.String("elastic-password", "", "password for elastic base auth")
 
 	fs.Duration("sync-interval", 30*time.Second, "sync file to elasticsearch duration")
 	fs.Int("publisher-num", 10, "number of concurrent publishers")
@@ -145,10 +147,10 @@ func main() {
 	elasticAddrs := fs.Lookup("elasticsearch-http-address").Value.(flag.Getter).Get().([]string)
 	indexName := fs.Lookup("index-name").Value.(flag.Getter).Get().(string)
 	indexType := fs.Lookup("index-type").Value.(flag.Getter).Get().(string)
-	fmt.Println("elasticAddrs", elasticAddrs)
-	fmt.Println("indexName", indexName)
-	fmt.Println("indexType", indexType)
+	elasticUsername := fs.Lookup("elastic-username").Value.(flag.Getter).Get().(string)
+	elasticPassword := fs.Lookup("elastic-password").Value.(flag.Getter).Get().(string)
 
-	discoverer, _ := newTopicDiscoverer(opts, cfg, hupChan, termChan, elasticAddrs, indexName, indexType)
+	discoverer, _ := newTopicDiscoverer(opts, cfg, hupChan, termChan,
+		elasticAddrs, indexName, indexType, elasticUsername, elasticPassword)
 	discoverer.run()
 }

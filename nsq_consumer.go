@@ -21,9 +21,9 @@ type NSQConsumer struct {
 
 // NewNSQConsumer create NSQConsumer
 func NewNSQConsumer(opts *Options, topic string, cfg *nsq.Config,
-	elasticAddrs []string, idxName string, idxType string) (*NSQConsumer, error) {
+	elasticAddrs []string, idxName, idxType, elasticUsername, elasticPassword string) (*NSQConsumer, error) {
 	log.Println("NewNSQConsumer topic", topic)
-	publisher, err := NewElasticPublisher(idxName, idxType, elasticAddrs)
+	publisher, err := NewElasticPublisher(idxName, idxType, elasticAddrs, elasticUsername, elasticPassword)
 	if err != nil {
 		return nil, err
 	}

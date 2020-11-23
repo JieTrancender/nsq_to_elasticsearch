@@ -18,14 +18,19 @@ type ElasticPublisher struct {
 }
 
 // NewElasticPublisher create elastic publisher
-func NewElasticPublisher(indexName string, indexType string, addrs []string) (*ElasticPublisher, error) {
+func NewElasticPublisher(indexName string, indexType string, addrs []string, username, password string) (*ElasticPublisher, error) {
 	var err error
 	publisher := &ElasticPublisher{
 		idxName: indexName,
 		idxType: indexType,
 	}
 
-	publisher.client, err = elastic.NewClient(elastic.SetURL(addrs...))
+	optionFuncs := []elastic.ClientOptionFunc{elastic.SetURL(addrs...)}
+	if username != "" {
+		optionFuncs = append(optionFuncs, elastic.SetBasicAuth(username, password))
+	}
+
+	publisher.client, err = elastic.NewClient(optionFuncs...)
 	return publisher, err
 }
 
