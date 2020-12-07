@@ -26,10 +26,11 @@ type TopicDiscoverer struct {
 	idxType         string
 	elasticUserName string
 	elasticPassword string
+	ddAccessToken   string
 }
 
 func newTopicDiscoverer(opts *Options, cfg *nsq.Config, hupChan chan os.Signal, termChan chan os.Signal,
-	elasticAddrs []string, idxName, idxType, elasticUsername, elasticPassword string) (*TopicDiscoverer, error) {
+	elasticAddrs []string, idxName, idxType, elasticUsername, elasticPassword, ddAccessToken string) (*TopicDiscoverer, error) {
 	discoverer := &TopicDiscoverer{
 		opts:            opts,
 		topics:          make(map[string]*NSQConsumer),
@@ -42,6 +43,7 @@ func newTopicDiscoverer(opts *Options, cfg *nsq.Config, hupChan chan os.Signal, 
 		idxType:         idxType,
 		elasticUserName: elasticUsername,
 		elasticPassword: elasticPassword,
+		ddAccessToken:   ddAccessToken,
 	}
 
 	return discoverer, nil
@@ -86,7 +88,7 @@ func (discoverer *TopicDiscoverer) updateTopics(topics []string) {
 
 		nsqConsumer, err := NewNSQConsumer(discoverer.opts, topic, discoverer.cfg,
 			discoverer.elasticAddrs, discoverer.idxName, discoverer.idxType,
-			discoverer.elasticUserName, discoverer.elasticPassword)
+			discoverer.elasticUserName, discoverer.elasticPassword, discoverer.ddAccessToken)
 		if err != nil {
 			discoverer.logger.Printf("error: could not register topic %s: %s", topic, err)
 			continue

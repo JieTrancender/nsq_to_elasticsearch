@@ -63,6 +63,8 @@ func flagSet() *flag.FlagSet {
 	fs.Duration("http-client-connect-timeout", 2*time.Second, "timeout for HTTP connect")
 	fs.Duration("http-client-request-timeout", 5*time.Second, "timeout for HTTP request")
 
+	fs.String("dingding-access-token", "", "ding ding access token")
+
 	elasticHTTPAddrs := ArrayFlags{}
 	nsqdTCPAddrs := ArrayFlags{}
 	lookupdHTTPAddrs := ArrayFlags{}
@@ -149,8 +151,11 @@ func main() {
 	indexType := fs.Lookup("index-type").Value.(flag.Getter).Get().(string)
 	elasticUsername := fs.Lookup("elastic-username").Value.(flag.Getter).Get().(string)
 	elasticPassword := fs.Lookup("elastic-password").Value.(flag.Getter).Get().(string)
+	ddAccessToken := fs.Lookup("dingding-access-token").Value.(flag.Getter).Get().(string)
 
+	fmt.Printf("token:%s\n", ddAccessToken)
 	discoverer, _ := newTopicDiscoverer(opts, cfg, hupChan, termChan,
-		elasticAddrs, indexName, indexType, elasticUsername, elasticPassword)
+		elasticAddrs, indexName, indexType, elasticUsername, elasticPassword,
+		ddAccessToken)
 	discoverer.run()
 }
