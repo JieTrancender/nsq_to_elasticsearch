@@ -59,23 +59,47 @@ type DingDingReqText struct {
 	Content string `json:"content"`
 }
 
-// DingDingReqBodyInfo dingding req body structure
-type DingDingReqBodyInfo struct {
-	MsgType string          `json:"msgtype"`
-	Text    DingDingReqText `json:"text"`
+type DingDingReqMarkdown struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
 }
 
-func (factory *ElasticPublisher) sendDingDingMsg(msg string) {
-	client := &http.Client{}
-	url := "oapi.dingtalk.com/robot/send"
+// DingDingReqBodyInfo dingding req body structure
+type DingDingReqBodyInfo struct {
+	MsgType string `json:"msgtype"`
+	// Text    DingDingReqText `json:"text"`
+	Markdown DingDingReqMarkdown `json:"markdown"`
+}
+
+// LogDataInfo log data structure
+type LogDataInfo struct {
+	GamePlatform string `json:"gamePlatform"`
+	NodeName     string `json:"ndoeName"`
+	FileName     string `json:"fileName"`
+	Msg          string `json:"message"`
+}
+
+func generateMarkDownBody(logData LogDataInfo) ([]byte, error) {
 	reqBody := DingDingReqBodyInfo{
-		MsgType: "text",
-		Text: DingDingReqText{
-			Content: msg,
+		MsgType: "markdown",
+		Markdown: DingDingReqMarkdown{
+			Title: "报错信息",
+			Text:  fmt.Sprintf("\n\n## %s渠道%s节点报错\n\n文件名:**%s**\n\n```lua\n%s\n```", logData.GamePlatform, logData.NodeName, logData.FileName, logData.Msg),
 		},
 	}
 
-	reqBodyJSON, _ := json.Marshal(reqBody)
+	return json.Marshal(reqBody)
+}
+
+func (factory *ElasticPublisher) sendDingDingMsg(logData LogDataInfo) {
+	client := &http.Client{}
+	url := "oapi.dingtalk.com/robot/send"
+	reqBodyJSON, err := generateMarkDownBody(logData)
+	if err != nil {
+		log.Printf("generate req data fail:%s", err)
+		return
+	}
+
 	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s?access_token=%s", url, factory.ddAccessToken), bytes.NewReader(reqBodyJSON))
 	if err != nil {
 		log.Printf("sendDingDingMsg fail:%v", err)
@@ -93,14 +117,20 @@ func (factory *ElasticPublisher) sendDingDingMsg(msg string) {
 }
 
 // 过滤报错信息并发送到顶顶群
-func (factory *ElasticPublisher) filterTraceback(msg string) {
+func (factory *ElasticPublisher) filterTraceback(gamePlatform, nodeName, fileName, msg string) {
 	if !strings.Contains(msg, "stack traceback") {
 		return
 	}
 
 	// 发送钉钉消息
 	if factory.ddAccessToken != "" {
-		go factory.sendDingDingMsg(msg)
+		logData := LogDataInfo{
+			GamePlatform: gamePlatform,
+			NodeName:     nodeName,
+			FileName:     fileName,
+			Msg:          msg,
+		}
+		go factory.sendDingDingMsg(logData)
 	}
 }
 
@@ -108,13 +138,15 @@ func (factory *ElasticPublisher) handleMessage(m *nsq.Message) error {
 	// fmt.Println("handleMessage", factory.indexName(), factory.indexType(), string(m.Body))
 	data := make(map[string]interface{})
 	err := json.Unmarshal(m.Body, &data)
-
-	factory.filterTraceback(data["message"].(string))
-
 	if err != nil {
 		fmt.Println("Unmarshal fail", err)
 		return err
 	}
+
+	logData := data["log"].(map[string]interface{})
+	fileData := logData["file"].(map[string]interface{})
+	factory.filterTraceback(data["gamePlatform"].(string), data["nodeName"].(string), fileData["path"].(string), data["message"].(string))
+
 	entry := factory.client.Index().Index(factory.indexName()).BodyJson(data)
 	_, err = entry.Do(context.Background())
 	return err
