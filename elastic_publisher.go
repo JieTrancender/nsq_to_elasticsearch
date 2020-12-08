@@ -84,7 +84,7 @@ func generateMarkDownBody(logData LogDataInfo) ([]byte, error) {
 		MsgType: "markdown",
 		Markdown: DingDingReqMarkdown{
 			Title: "报错信息",
-			Text:  fmt.Sprintf("\n\n## %s渠道%s节点报错\n\n文件名:**%s**\n\n```lua\n%s\n```", logData.GamePlatform, logData.NodeName, logData.FileName, logData.Msg),
+			Text:  fmt.Sprintf("\n\n## %s渠道%s节点报错收集\n\n文件名:**%s**\n\n```lua\n%s\n```", logData.GamePlatform, logData.NodeName, logData.FileName, logData.Msg),
 		},
 	}
 
