@@ -74,7 +74,7 @@ type DingDingReqBodyInfo struct {
 // LogDataInfo log data structure
 type LogDataInfo struct {
 	GamePlatform string `json:"gamePlatform"`
-	NodeName     string `json:"ndoeName"`
+	NodeName     string `json:"nodeName"`
 	FileName     string `json:"fileName"`
 	Msg          string `json:"message"`
 }
@@ -102,7 +102,7 @@ func (factory *ElasticPublisher) sendDingDingMsg(logData LogDataInfo) {
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s?access_token=%s", url, factory.ddAccessToken), bytes.NewReader(reqBodyJSON))
 	if err != nil {
-		log.Printf("sendDingDingMsg fail:%v", err)
+		fmt.Printf("sendDingDingMsg fail:%v %s", err, string(reqBodyJSON))
 		return
 	}
 
@@ -112,13 +112,21 @@ func (factory *ElasticPublisher) sendDingDingMsg(logData LogDataInfo) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("sendDingDingMsg success:%s\n", string(body))
+		fmt.Printf("sendDingDingMsg success:%s\n", string(body))
 	}
 }
 
 // 过滤报错信息并发送到顶顶群
 func (factory *ElasticPublisher) filterTraceback(gamePlatform, nodeName, fileName, msg string) {
-	if !strings.Contains(msg, "stack traceback") {
+	// 报错堆栈或者alarm日志才报警
+	// todo: 使用可配置的关键字
+	if !strings.Contains(msg, "stack traceback") && !strings.Contains(msg, "alarm") {
+		return
+	}
+
+	// 特定关键字不报警，例如聊天后台请求
+	// todo: 使用可配置的关键字
+	if strings.Contains(msg, "chatMsgFilter") || strings.Contains(msg, "attempt to index a nil value (local 'pb')") {
 		return
 	}
 
