@@ -126,7 +126,8 @@ func (factory *ElasticPublisher) filterTraceback(gamePlatform, nodeName, fileNam
 
 	// 特定关键字不报警，例如聊天后台请求
 	// todo: 使用可配置的关键字
-	if strings.Contains(msg, "chatMsgFilter") || strings.Contains(msg, "attempt to index a nil value (local 'pb')") {
+	if strings.Contains(msg, "chatMsgFilter") || strings.Contains(msg, "attempt to index a nil value (local 'pb')") ||
+		strings.Contains(msg, "websocket") {
 		return
 	}
 
