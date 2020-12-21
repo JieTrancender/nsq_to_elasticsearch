@@ -131,6 +131,10 @@ func (factory *ElasticPublisher) filterTraceback(gamePlatform, nodeName, fileNam
 		return
 	}
 
+	if true {
+		return
+	}
+
 	// 发送钉钉消息
 	if factory.ddAccessToken != "" {
 		logData := LogDataInfo{
