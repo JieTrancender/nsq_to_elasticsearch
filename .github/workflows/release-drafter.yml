@@ -1,0 +1,26 @@
+name: Release Drafter
+
+on:
+  create:
+    tags:
+      - v*
+
+job:
+  release:
+    name: Release on Github
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/setup-go@v2
+
+      - name: Validates go releaser config
+        uses: docker://goreleaser/goreleaser:latest
+        with:
+          args: check
+
+      - name: Create release on Github
+        uses: docker://goreleaser/goreleaser:latest
+        with:
+          args: release
+        evn:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

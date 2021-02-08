@@ -1,0 +1,27 @@
+---
+name: Feature request
+about: Help us to improve this project
+title: ''
+labels: ''
+assignees: ''
+
+---
+
+Please answer these questions before submitting a pull request
+
+- Why submit this pull request?
+- [ ] Bugfix
+- [ ] New feature provided
+- [ ] Improve performance
+
+- Related issues
+
+___
+### Bugfix
+- Description
+
+- How to fix?
+
+___
+### New feature or improvement
+- Describe the details and related test reports.
