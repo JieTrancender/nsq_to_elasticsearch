@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jehiah/go-strftime"
-	"github.com/nsqio/go-nsq"
-	"github.com/olivere/elastic/v7"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/jehiah/go-strftime"
+	"github.com/nsqio/go-nsq"
+	"github.com/olivere/elastic/v7"
 )
 
 // ElasticPublisher elastic publisher structure
@@ -46,19 +47,20 @@ func (factory *ElasticPublisher) indexName() string {
 	return strftime.Format(factory.idxName, now)
 }
 
-func (factory *ElasticPublisher) indexType() string {
-	return factory.idxType
-}
+// func (factory *ElasticPublisher) indexType() string {
+// 	return factory.idxType
+// }
 
 // type Person struct {
 // 	Name string `json:"name"`
 // }
 
 // DingDingReqText dingding req text structure
-type DingDingReqText struct {
-	Content string `json:"content"`
-}
+// type DingDingReqText struct {
+// 	Content string `json:"content"`
+// }
 
+// DingDingReqMarkdown request for Markdown format
 type DingDingReqMarkdown struct {
 	Title string `json:"title"`
 	Text  string `json:"text"`
@@ -108,6 +110,10 @@ func (factory *ElasticPublisher) sendDingDingMsg(logData LogDataInfo) {
 
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("sendDingDingMsg do fail:%v", err)
+		return
+	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
