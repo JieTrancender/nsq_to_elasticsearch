@@ -1,16 +1,14 @@
 package main
 
 import (
-	"github.com/nsqio/go-nsq"
 	"log"
 	"os"
 	"regexp"
 	"sync"
 	"time"
-)
 
-// TopicDiscovererFunc interface of topic discoverer
-type TopicDiscovererFunc func(topic string) error
+	"github.com/nsqio/go-nsq"
+)
 
 // TopicDiscoverer struct of topic discoverer
 type TopicDiscoverer struct {
@@ -49,14 +47,14 @@ func newTopicDiscoverer(opts *Options, cfg *nsq.Config, hupChan chan os.Signal, 
 	return discoverer, nil
 }
 
-func (discoverer *TopicDiscoverer) allowTopicName(pattern, name string) bool {
-	match, err := regexp.MatchString(pattern, name)
-	if err != nil {
-		return false
-	}
+// func (discoverer *TopicDiscoverer) allowTopicName(pattern, name string) bool {
+// 	match, err := regexp.MatchString(pattern, name)
+// 	if err != nil {
+// 		return false
+// 	}
 
-	return match
-}
+// 	return match
+// }
 
 func (discoverer *TopicDiscoverer) isTopicAllowed(topic string) bool {
 	if len(discoverer.opts.TopicPatterns) == 0 {

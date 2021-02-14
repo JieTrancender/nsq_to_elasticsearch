@@ -3,14 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	"github.com/mreiferson/go-options"
 	"github.com/nsqio/go-nsq"
+
 	// "strings"
 	// "github.com/olivere/elastic"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
 	// "sync"
 	"time"
 )
@@ -83,7 +86,10 @@ func flagSet() *flag.FlagSet {
 
 func main() {
 	fs := flagSet()
-	fs.Parse(os.Args[1:])
+	err := fs.Parse(os.Args[1:])
+	if err != nil {
+		log.Fatalf("fs.Parse fail, err:%s", err)
+	}
 
 	if args := fs.Args(); len(args) > 0 {
 		log.Fatalf("unknown arguments: %s", args)
@@ -131,15 +137,15 @@ func main() {
 	}
 
 	cfg := nsq.NewConfig()
-	cfgFlag := nsq.ConfigFlag{cfg}
+	cfgFlag := nsq.ConfigFlag{Config: cfg}
 	for _, opt := range opts.ConsumerOpts {
-		cfgFlag.Set(opt)
+		_ = cfgFlag.Set(opt)
 	}
 	cfg.UserAgent = fmt.Sprintf("nsq_to_elasticsearch/%s go-nsq/%s", VERSION, nsq.VERSION)
 	cfg.MaxInFlight = opts.MaxInFlight
 
-	hupChan := make(chan os.Signal)
-	termChan := make(chan os.Signal)
+	hupChan := make(chan os.Signal, 1)
+	termChan := make(chan os.Signal, 1)
 	signal.Notify(hupChan, syscall.SIGHUP)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
 
