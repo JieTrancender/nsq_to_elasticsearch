@@ -11,4 +11,7 @@ require (
 	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/olivere/elastic/v7 v7.0.21
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/spf13/cobra v1.1.1
+	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.1
 )
