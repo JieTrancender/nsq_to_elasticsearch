@@ -31,7 +31,7 @@ type TopicDiscoverer struct {
 }
 
 func NewTopicDiscoverer(opts *nsq_options.Options, cfg *nsq.Config, hupChan chan os.Signal, termChan chan os.Signal,
-	elasticAddrs []string, idxName, idxType, elasticUsername, elasticPassword, ddAccessToken string) (*TopicDiscoverer, error) {
+	ddAccessToken string) (*TopicDiscoverer, error) {
 	discoverer := &TopicDiscoverer{
 		opts:            opts,
 		topics:          make(map[string]*nsq_consumer.NSQConsumer),
@@ -39,11 +39,6 @@ func NewTopicDiscoverer(opts *nsq_options.Options, cfg *nsq.Config, hupChan chan
 		hupChan:         hupChan,
 		logger:          log.New(os.Stdout, "[topic_discoverer]: ", log.LstdFlags),
 		cfg:             cfg,
-		elasticAddrs:    elasticAddrs,
-		idxName:         idxName,
-		idxType:         idxType,
-		elasticUserName: elasticUsername,
-		elasticPassword: elasticPassword,
 		ddAccessToken:   ddAccessToken,
 	}
 

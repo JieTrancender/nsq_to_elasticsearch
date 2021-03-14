@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"flag"
 	"strings"
 	"os"
 	"os/signal"
@@ -40,6 +41,8 @@ func genRunCmd() *cobra.Command {
 			return initializeConfig(cmd)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			flag.Parse()
+			
 			fmt.Printf("version: v%s\n", Version)
 			// fmt.Printf("etcd config %s %s %s %s\n", etcdEndpoint, etcdPath, etcdUsername, etcdPassword)
 
@@ -51,15 +54,8 @@ func genRunCmd() *cobra.Command {
 			opts := nsq_options.NewOptions()
 			cfg := nsq.NewConfig()
 			
-			elasticAddrs := make([]string, 0)
-			indexName := "indexName"
-			indexType := "doc"
-			elasticUsername := "root"
-			elasticPassword := "root"
 			ddAccessToken := "123456"
-			
 			discoverer, _ := topic_discoverer.NewTopicDiscoverer(opts, cfg, hupChan, termChan,
-				elasticAddrs, indexName, indexType, elasticUsername, elasticPassword,
 				ddAccessToken)
 			discoverer.Run()
 		},

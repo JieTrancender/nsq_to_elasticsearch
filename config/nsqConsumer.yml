@@ -5,3 +5,12 @@ etcdEndpoint:
 etcdPath: /config/nsq_consumer/default
 etcdUsername: root
 etcdPassword: root
+
+# for elasticsearch
+elastic_http_addrs:
+  - 127.0.0.1:9200
+  - 127.0.0.1:9201
+elastic_username: root
+elastic_password: 123456
+elastic_index_name: nsq-%Y.%m.%d
+elastic_index_type: nsq

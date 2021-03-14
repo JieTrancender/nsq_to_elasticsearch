@@ -1,6 +1,7 @@
 package nsq_publisher
 
 import (
+	"flag"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -16,6 +17,15 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
+var (
+	elasticHTTPAddrs = make([]string, 1)
+	// elasticHTTPAddrs = flag.StringArray("elastic_http_addrs", []string{}, "http addrs for elasticsearch")
+	elasticUsername = flag.String("elastic_username", "", "username for elasticsearch")
+	elasticPassword = flag.String("elastic_password", "", "password for elasticsearch")
+	elasticIndexName = flag.String("elastic_index_name", "nsq-%Y.%m.%d", "elasticsearch index name (strftime format")
+	elasticIndexType = flag.String("elastic_index_type", "nsq", "elasticsearch index mapping")
+)
+
 // ElasticPublisher elastic publisher structure
 type ElasticPublisher struct {
 	client        *elastic.Client
@@ -25,17 +35,17 @@ type ElasticPublisher struct {
 }
 
 // NewElasticPublisher create elastic publisher
-func NewElasticPublisher(indexName string, indexType string, addrs []string, username, password, ddAccessToken string) (*ElasticPublisher, error) {
+func NewElasticPublisher(ddAccessToken string) (*ElasticPublisher, error) {
 	var err error
 	publisher := &ElasticPublisher{
-		idxName:       indexName,
-		idxType:       indexType,
+		idxType: *elasticIndexType,
+		idxName: *elasticIndexName,
 		ddAccessToken: ddAccessToken,
 	}
 
-	optionFuncs := []elastic.ClientOptionFunc{elastic.SetURL(addrs...)}
-	if username != "" {
-		optionFuncs = append(optionFuncs, elastic.SetBasicAuth(username, password))
+	optionFuncs := []elastic.ClientOptionFunc{elastic.SetURL(elasticHTTPAddrs...)}
+	if *elasticUsername != "" {
+		optionFuncs = append(optionFuncs, elastic.SetBasicAuth(*elasticUsername, *elasticPassword))
 	}
 
 	publisher.client, err = elastic.NewClient(optionFuncs...)
