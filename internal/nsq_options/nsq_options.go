@@ -1,4 +1,4 @@
-package main
+package nsq_options
 
 import "time"
 

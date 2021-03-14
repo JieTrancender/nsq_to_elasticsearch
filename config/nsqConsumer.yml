@@ -1,5 +1,7 @@
 # for etcd
-etcdEndpoint: 127.0.0.1:2379
+etcdEndpoint:
+  - 127.0.0.1:2379
+  - 127.0.0.1:2380
 etcdPath: /config/nsq_consumer/default
 etcdUsername: root
 etcdPassword: root

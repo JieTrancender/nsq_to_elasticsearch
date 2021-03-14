@@ -1,4 +1,4 @@
-package main
+package nsq_publisher
 
 import (
 	"bytes"
@@ -153,7 +153,7 @@ func (factory *ElasticPublisher) filterTraceback(gamePlatform, nodeName, fileNam
 	}
 }
 
-func (factory *ElasticPublisher) handleMessage(m *nsq.Message) error {
+func (factory *ElasticPublisher) HandleMessage(m *nsq.Message) error {
 	// fmt.Println("handleMessage", factory.indexName(), factory.indexType(), string(m.Body))
 	data := make(map[string]interface{})
 	err := json.Unmarshal(m.Body, &data)

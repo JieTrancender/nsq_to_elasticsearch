@@ -3,10 +3,18 @@ package cmd
 import (
 	"fmt"
 	"strings"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/nsqio/go-nsq"
+
+	"github.com/JieTrancender/nsq_to_elasticsearch/internal/topic_discoverer"
+	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_options"
 )
 
 const (
@@ -18,7 +26,7 @@ const (
 )
 
 type NsqConsumerConfig struct {
-	EtcdEndpoint string `json:"etcdEndpoint"`
+	EtcdEndpoint []string `json:"etcdEndpoint"`
 	EtcdPath     string `json:"etcdPath"`
 	EtcdUsername string `json:"etcdUsername"`
 	EtcdPassword string `json:"etcdPassword"`
@@ -33,6 +41,27 @@ func genRunCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("version: v%s\n", Version)
+			// fmt.Printf("etcd config %s %s %s %s\n", etcdEndpoint, etcdPath, etcdUsername, etcdPassword)
+
+			hupChan := make(chan os.Signal, 1)
+			termChan := make(chan os.Signal, 1)
+			signal.Notify(hupChan, syscall.SIGHUP)
+			signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+			
+			opts := nsq_options.NewOptions()
+			cfg := nsq.NewConfig()
+			
+			elasticAddrs := make([]string, 0)
+			indexName := "indexName"
+			indexType := "doc"
+			elasticUsername := "root"
+			elasticPassword := "root"
+			ddAccessToken := "123456"
+			
+			discoverer, _ := topic_discoverer.NewTopicDiscoverer(opts, cfg, hupChan, termChan,
+				elasticAddrs, indexName, indexType, elasticUsername, elasticPassword,
+				ddAccessToken)
+			discoverer.Run()
 		},
 	}
 

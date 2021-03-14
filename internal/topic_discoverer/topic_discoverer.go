@@ -1,4 +1,4 @@
-package main
+package topic_discoverer
 
 import (
 	"log"
@@ -8,12 +8,15 @@ import (
 	"time"
 
 	"github.com/nsqio/go-nsq"
+
+	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_options"
+	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_consumer"
 )
 
 // TopicDiscoverer struct of topic discoverer
 type TopicDiscoverer struct {
-	opts            *Options
-	topics          map[string]*NSQConsumer
+	opts            *nsq_options.Options
+	topics          map[string]*(nsq_consumer.NSQConsumer)
 	termChan        chan os.Signal
 	hupChan         chan os.Signal
 	logger          *log.Logger
@@ -27,11 +30,11 @@ type TopicDiscoverer struct {
 	ddAccessToken   string
 }
 
-func newTopicDiscoverer(opts *Options, cfg *nsq.Config, hupChan chan os.Signal, termChan chan os.Signal,
+func NewTopicDiscoverer(opts *nsq_options.Options, cfg *nsq.Config, hupChan chan os.Signal, termChan chan os.Signal,
 	elasticAddrs []string, idxName, idxType, elasticUsername, elasticPassword, ddAccessToken string) (*TopicDiscoverer, error) {
 	discoverer := &TopicDiscoverer{
 		opts:            opts,
-		topics:          make(map[string]*NSQConsumer),
+		topics:          make(map[string]*nsq_consumer.NSQConsumer),
 		termChan:        termChan,
 		hupChan:         hupChan,
 		logger:          log.New(os.Stdout, "[topic_discoverer]: ", log.LstdFlags),
@@ -84,7 +87,7 @@ func (discoverer *TopicDiscoverer) updateTopics(topics []string) {
 			continue
 		}
 
-		nsqConsumer, err := NewNSQConsumer(discoverer.opts, topic, discoverer.cfg,
+		nsqConsumer, err := nsq_consumer.NewNSQConsumer(discoverer.opts, topic, discoverer.cfg,
 			discoverer.elasticAddrs, discoverer.idxName, discoverer.idxType,
 			discoverer.elasticUserName, discoverer.elasticPassword, discoverer.ddAccessToken)
 		if err != nil {
@@ -94,14 +97,14 @@ func (discoverer *TopicDiscoverer) updateTopics(topics []string) {
 		discoverer.topics[topic] = nsqConsumer
 
 		discoverer.wg.Add(1)
-		go func(nsqConsumer *NSQConsumer) {
-			nsqConsumer.router()
+		go func(nsqConsumer *nsq_consumer.NSQConsumer) {
+			nsqConsumer.Router()
 			discoverer.wg.Done()
 		}(nsqConsumer)
 	}
 }
 
-func (discoverer *TopicDiscoverer) run() {
+func (discoverer *TopicDiscoverer) Run() {
 	var ticker <-chan time.Time
 	if len(discoverer.opts.Topics) == 0 {
 		ticker = time.Tick(discoverer.opts.TopicRefreshInterval)
@@ -116,12 +119,12 @@ forloop:
 		case <-discoverer.termChan:
 			for _, nsqConsumer := range discoverer.topics {
 				// nsqConsumer.consumer.Stop()
-				close(nsqConsumer.termChan)
+				close(nsqConsumer.TermChan)
 			}
 			break forloop
 		case <-discoverer.hupChan:
 			for _, nsqConsumer := range discoverer.topics {
-				nsqConsumer.hupChan <- true
+				nsqConsumer.HupChan <- true
 			}
 			break forloop
 		}

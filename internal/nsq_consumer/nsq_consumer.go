@@ -1,29 +1,32 @@
-package main
+package nsq_consumer
 
 import (
 	"github.com/nsqio/go-nsq"
 	"log"
 	"os"
+
+	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_publisher"
+	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_options"
 )
 
 // NSQConsumer nsq consumer structure
 type NSQConsumer struct {
-	publisher *ElasticPublisher
-	opts      *Options
+	publisher *nsq_publisher.ElasticPublisher
+	opts      *nsq_options.Options
 	topic     string
 	consumer  *nsq.Consumer
 
 	msgChan chan *nsq.Message
 
-	termChan chan bool
-	hupChan  chan bool
+	TermChan chan bool
+	HupChan  chan bool
 }
 
 // NewNSQConsumer create NSQConsumer
-func NewNSQConsumer(opts *Options, topic string, cfg *nsq.Config,
+func NewNSQConsumer(opts *nsq_options.Options, topic string, cfg *nsq.Config,
 	elasticAddrs []string, idxName, idxType, elasticUsername, elasticPassword, ddAccessToken string) (*NSQConsumer, error) {
 	log.Println("NewNSQConsumer topic", topic)
-	publisher, err := NewElasticPublisher(idxName, idxType, elasticAddrs, elasticUsername, elasticPassword, ddAccessToken)
+	publisher, err := nsq_publisher.NewElasticPublisher(idxName, idxType, elasticAddrs, elasticUsername, elasticPassword, ddAccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +42,8 @@ func NewNSQConsumer(opts *Options, topic string, cfg *nsq.Config,
 		topic:     topic,
 		consumer:  consumer,
 		msgChan:   make(chan *nsq.Message, 1),
-		termChan:  make(chan bool),
-		hupChan:   make(chan bool),
+		TermChan:  make(chan bool),
+		HupChan:   make(chan bool),
 	}
 	consumer.AddHandler(nsqConsumer)
 
@@ -64,18 +67,18 @@ func (nsqConsumer *NSQConsumer) HandleMessage(m *nsq.Message) error {
 	return nil
 }
 
-func (nsqConsumer *NSQConsumer) router() {
+func (nsqConsumer *NSQConsumer) Router() {
 	closeElastic, exit := false, false
 	for {
 		select {
 		case <-nsqConsumer.consumer.StopChan:
 			closeElastic, exit = true, true
-		case <-nsqConsumer.termChan:
+		case <-nsqConsumer.TermChan:
 			nsqConsumer.consumer.Stop()
-		case <-nsqConsumer.hupChan:
+		case <-nsqConsumer.HupChan:
 			closeElastic = true
 		case m := <-nsqConsumer.msgChan:
-			err := nsqConsumer.publisher.handleMessage(m)
+			err := nsqConsumer.publisher.HandleMessage(m)
 			if err != nil {
 				// 重试
 				m.Requeue(-1)
