@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"reflect"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -34,6 +35,12 @@ type NsqConsumerConfig struct {
 }
 
 func genRunCmd() *cobra.Command {
+	etcdEndpoints := []string{}
+	etcdUsername := ""
+	etcdPassword := ""
+	etcdPath := ""
+	etcd_hosts := []string{}
+
 	runCmd := &cobra.Command{
 		Use:   "run",
 		Short: "start nsq consumer tool",
@@ -44,7 +51,7 @@ func genRunCmd() *cobra.Command {
 			flag.Parse()
 			
 			fmt.Printf("version: v%s\n", Version)
-			// fmt.Printf("etcd config %s %s %s %s\n", etcdEndpoint, etcdPath, etcdUsername, etcdPassword)
+			fmt.Printf("etcd config %v %s %s %s %v %v %v\n", etcdEndpoints, etcdPath, etcdUsername, etcdPassword, etcd_hosts, reflect.TypeOf(etcdEndpoints), reflect.TypeOf(etcd_hosts))
 
 			hupChan := make(chan os.Signal, 1)
 			termChan := make(chan os.Signal, 1)
@@ -55,11 +62,19 @@ func genRunCmd() *cobra.Command {
 			cfg := nsq.NewConfig()
 			
 			ddAccessToken := "123456"
-			discoverer, _ := topic_discoverer.NewTopicDiscoverer(opts, cfg, hupChan, termChan,
-				ddAccessToken)
+			discoverer, err := topic_discoverer.NewTopicDiscoverer(opts, cfg, hupChan, termChan,
+				ddAccessToken, etcdEndpoints, etcdUsername, etcdPassword, etcdPath)
+			if err != nil {
+				panic(err)
+			}
 			discoverer.Run()
 		},
 	}
+
+	runCmd.Flags().StringArrayVar(&etcdEndpoints, "etcd_endpoints", []string{"127.0.0.1:2379"}, "etcd host(may be given multi times)")
+	runCmd.Flags().StringVar(&etcdUsername, "etcd_username", "root", "username of etcd")
+	runCmd.Flags().StringVar(&etcdPassword, "etcd_password", "123456", "password of etcd")
+	runCmd.Flags().StringVar(&etcdPath, "etcd_path", "config/nsq_to_elasticsearch/default", "path of the config in etcd")
 
 	return runCmd
 }
@@ -81,7 +96,7 @@ func initializeConfig(cmd *cobra.Command) error {
 
 	v.AutomaticEnv()
 
-	bindFlags(cmd, v)
+	// bindFlags(cmd, v)
 
 	return nil
 }

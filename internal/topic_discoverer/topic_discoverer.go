@@ -1,13 +1,17 @@
 package topic_discoverer
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"sync"
 	"time"
+	"context"
 
 	"github.com/nsqio/go-nsq"
+
+	"github.com/coreos/etcd/clientv3"
 
 	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_options"
 	"github.com/JieTrancender/nsq_to_elasticsearch/internal/nsq_consumer"
@@ -28,10 +32,26 @@ type TopicDiscoverer struct {
 	elasticUserName string
 	elasticPassword string
 	ddAccessToken   string
+	etcdPath string  // etcd config path
+	etcdCli *clientv3.Client
 }
 
 func NewTopicDiscoverer(opts *nsq_options.Options, cfg *nsq.Config, hupChan chan os.Signal, termChan chan os.Signal,
-	ddAccessToken string) (*TopicDiscoverer, error) {
+	ddAccessToken string, etcdEndpoints []string, etcdUsername, etcdPassword, etcdPath string) (*TopicDiscoverer, error) {
+	fmt.Println("~~~~~~~init", etcdPath, etcdEndpoints, etcdUsername, etcdPassword,
+		etcdEndpoints[0])
+	etcdCli, err := clientv3.New(clientv3.Config{
+		Endpoints: etcdEndpoints,
+		DialTimeout: 5 * time.Second,
+		Username: etcdUsername,
+		Password: etcdPassword,
+	})
+	fmt.Println("~~~~~~~init, err", etcdPath, err)
+	if err != nil {
+		return nil, err
+	}
+		
+	fmt.Println("~~~~~~~init", etcdPath)
 	discoverer := &TopicDiscoverer{
 		opts:            opts,
 		topics:          make(map[string]*nsq_consumer.NSQConsumer),
@@ -39,7 +59,9 @@ func NewTopicDiscoverer(opts *nsq_options.Options, cfg *nsq.Config, hupChan chan
 		hupChan:         hupChan,
 		logger:          log.New(os.Stdout, "[topic_discoverer]: ", log.LstdFlags),
 		cfg:             cfg,
+		etcdCli: etcdCli,
 		ddAccessToken:   ddAccessToken,
+		etcdPath: etcdPath,
 	}
 
 	return discoverer, nil
@@ -99,7 +121,26 @@ func (discoverer *TopicDiscoverer) updateTopics(topics []string) {
 	}
 }
 
+// initAndWatchConfig gets and watchs etcd config
+func (discoverer *TopicDiscoverer) initAndWatchConfig() error {
+	fmt.Println("~~~~~~initAndWatchConfig", discoverer.etcdPath)
+	resp, err := discoverer.etcdCli.Get(context.Background(), discoverer.etcdPath, clientv3.WithPrefix())
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp)
+
+	return nil
+}
+
 func (discoverer *TopicDiscoverer) Run() {
+	err := discoverer.initAndWatchConfig()
+	fmt.Println("~~~~~~~Run", err)
+	// if err != nil {
+	// 	return err
+	// }
+	
 	var ticker <-chan time.Time
 	if len(discoverer.opts.Topics) == 0 {
 		ticker = time.Tick(discoverer.opts.TopicRefreshInterval)
